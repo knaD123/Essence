@@ -15,11 +15,8 @@ import random
 from itertools import islice, cycle
 
 from ForwardingTable import ForwardingTable
-from benjamins_heuristic_file import initializenetwork, pathfind
 from typing import Dict, Tuple, List, Callable
 from essence import *
-from heuristics.inverse_cap import inverse_cap
-from heuristics.placeholder import placeholder
 from benj_heuristic import *
 
 def label(ingress, egress, path_index: int):
@@ -231,42 +228,6 @@ def shortest_paths(client):
                 path_gens.pop((src, tgt))
                 continue
 
-
-def benjamins_heuristic(client):
-    # We set number of extra hops allowed
-    k = client.kwargs["extra_hops"]
-
-    G = client.router.network.topology
-    nx.set_node_attributes(G, 0, "jumpsfromtarget")
-
-    nx.set_edge_attributes(G, 0, "usage")
-
-    for (src, tgt), cap in client.link_caps.items():
-        G[src][tgt]["weight"] = cap
-
-    pathdict = dict()
-
-    for src, tgt, load in client.loads:
-        pathdict[(src, tgt)] = []
-
-    for src, tgt, load in client.loads:
-        paths = pathfind((src,tgt,load), G, k)
-        nodepaths = linktonode(kpaths(paths,1,G,(src,tgt,load),k))
-        pathdict[src,tgt] = nodepaths
-
-    path_indices = {}
-    for src, tgt, load in client.loads:
-        path_indices[src, tgt] = 0
-        yield ((src, tgt), pathdict[src, tgt][0])
-
-    for i in range(client.mem_limit_per_router_per_flow):
-        for src, tgt, load in client.loads:
-            path_index = path_indices[src, tgt]
-            if path_index >= len(pathdict[src, tgt]):
-                continue
-            path_indices[src, tgt] += 1
-            yield ((src, tgt), pathdict[src, tgt][path_index])
-
 # Insert lowest utility path first in semi disjoint paths
 def lowestutilitypathinsert(client, pathdict):
     G = client.router.network.topology.to_directed()
@@ -447,31 +408,6 @@ def nielsens_heuristic(client):
             flow_to_graph[(src, tgt)][v1][v2]["weight"] = w
         pathdict[src, tgt].append(path)
 
-    '''
-    new_pathdict = dict()
-
-    for src, tgt, load in client.loads:
-        new_pathdict[(src, tgt, load)] = []
-
-    # Remove duplicate paths
-    for src, tgt, load in pathdict.keys():
-        for elem in pathdict[(src, tgt, load)]:
-            if elem not in new_pathdict[(src, tgt, load)]:
-                new_pathdict[(src, tgt, load)].append(elem)
-
-    for src, tgt, load in client.loads:
-        pathdict[src, tgt, load] = new_pathdict[src, tgt, load]
-
-    # pathdict = lowestutilitypathinsert(client, pathdict)
-    pathdict = prefixsort(client, pathdict)
-
-    # Find unused paths probably deprecatable
-    for src, tgt, load in sorted(client.loads, key=lambda x: x[2], reverse=True):
-        unused_paths = find_unused_paths(pathdict[src,tgt,load], G, src, tgt)
-        if unused_paths:
-            pathdict[src,tgt,load].append(find_unused_paths(pathdict[src,tgt,load], G, src, tgt))
-    '''
-
     pathdict = prefixsort(pathdict)
 
     path_indices = {}
@@ -512,12 +448,8 @@ class InOutDisjoint(MPLS_Client):
             'shortest_path': shortest_paths,
             'greedy_min_congestion': greedy_min_congestion,
             'semi_disjoint_paths': semi_disjoint_paths,
-            'benjamins_heuristic': benjamins_heuristic,
-            'nielsens_heuristic': nielsens_heuristic,
             'essence': essence,
             'essence_v2': essence_v2,
-            'inverse_cap': inverse_cap,
-            'placeholder': placeholder
         }
 
         "self.path_heuristic = semi_disjoint_paths"
