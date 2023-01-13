@@ -1,0 +1,15 @@
+backtrack: partial
+demands: demands/BsonetEurope_0000.yml
+failure_chunk_file: confs/zoo_BsonetEurope/failure_chunks/0.yml
+ldp: false
+method: inout-disjoint
+path_heuristic: nielsens_heuristic
+per_flow_memory: 10
+php: false
+random_gen_method: 1
+random_seed: 1
+random_weight_mode: equal
+result_folder: results/inout-disjoint_max-mem=10_path-heuristic=nielsens_heuristic/zoo_BsonetEurope
+rsvp_tunnels_per_pair: 1
+topology: topo2/zoo_BsonetEurope.json
+vpn: false
